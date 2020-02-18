@@ -1,7 +1,7 @@
 package classfile.view;
 
-import clazz.Method;
-import clazz.attribute.Attribute;
+import klass.Method;
+import klass.attribute.Attribute;
 
 import java.util.LinkedHashMap;
 import java.util.List;

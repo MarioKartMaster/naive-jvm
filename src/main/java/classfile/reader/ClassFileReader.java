@@ -1,12 +1,11 @@
 package classfile.reader;
 
-import clazz.Clazz;
-import clazz.constant.ConstantFactory;
-import clazz.Field;
-import clazz.Method;
-import clazz.attribute.Attribute;
-import clazz.constant.Constant;
-import clazz.constant.ConstantPool;
+import klass.Klass;
+import klass.constant.*;
+import klass.Field;
+import klass.Method;
+import klass.attribute.Attribute;
+import runtime.ClassLoader;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -53,7 +52,7 @@ public class ClassFileReader extends Reader {
         return new Method(accessFlag, nameIndex, descriptorIndex, attributes);
     }
 
-    public Clazz readClass() throws IOException {
+    public Klass readClass(ClassLoader classLoader) throws IOException {
         int magic = readU4();
         int minorVersion = readU2();
         int majorVersion = readU2();
@@ -62,7 +61,12 @@ public class ClassFileReader extends Reader {
         ConstantPool constantPool = new ConstantPool();
         constantPool.add(null);
         for (int i = 1; i < constantPoolCount; i++) {
-            constantPool.add(readConstant());
+            Constant constant = readConstant();
+            constantPool.add(constant);
+            if (constant instanceof LongConstant || constant instanceof DoubleConstant) {
+                constantPool.add(null);
+                i++;
+            }
         }
 
         int accessFlags = readU2();
@@ -93,7 +97,7 @@ public class ClassFileReader extends Reader {
             attributes[i] = readAttribute(constantPool);
         }
 
-        return new Clazz(magic, minorVersion, majorVersion, constantPool, accessFlags, thisClass, superClass, interfaces, fields, methods, attributes);
+        return new Klass(magic, minorVersion, majorVersion, constantPool, accessFlags, thisClass, superClass, interfaces, fields, methods, attributes, classLoader);
     }
 
     public Attribute readAttribute(ConstantPool constants) throws IOException {

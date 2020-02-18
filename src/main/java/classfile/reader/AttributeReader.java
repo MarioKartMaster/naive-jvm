@@ -1,8 +1,8 @@
 package classfile.reader;
 
-import clazz.attribute.*;
-import clazz.constant.Constant;
-import clazz.constant.ConstantPool;
+import klass.attribute.*;
+import klass.constant.Constant;
+import klass.constant.ConstantPool;
 
 import java.io.IOException;
 import java.io.InputStream;

@@ -1,24 +1,22 @@
 package runtime;
 
-import clazz.Clazz;
-import clazz.Method;
-import clazz.attribute.Attribute;
-import clazz.attribute.CodeAttribute;
+import instruction.Instruction;
+import klass.Klass;
+import klass.Method;
 import runtime.cpu.CPU;
 import runtime.memory.Frame;
 import runtime.memory.Memory;
 import runtime.memory.Thread;
 
-import java.io.IOException;
 import java.util.Stack;
 
 public class NaiveJVM {
 
     private CPU cpu;
     private Memory memory;
-    private BootstrapClassLoader classLoader;
+    private ClassLoader classLoader;
 
-    public NaiveJVM(CPU cpu, Memory memory, BootstrapClassLoader classLoader) {
+    public NaiveJVM(CPU cpu, Memory memory, ClassLoader classLoader) {
         this.cpu = cpu;
         this.memory = memory;
         this.classLoader = classLoader;
@@ -29,22 +27,25 @@ public class NaiveJVM {
             return;
         }
 
-        Clazz mainClass;
+        // get main class
         String mainClassName = args[0];
-        try {
-            mainClass = classLoader.loadClass(mainClassName);
-        } catch (IOException e) {
-            e.printStackTrace();
-            return;
-        }
+        Klass mainClass = classLoader.loadClass(mainClassName);
 
-        // run main method
+        // get main method
         Method mainMethod = mainClass.getMainMethod();
 
-        Thread thread = new Thread(classLoader);
-        Stack<Frame> stack = thread.getStack();
-        Frame frame = new Frame(mainClass, mainMethod);
-        stack.push(frame);
+        Thread thread = new Thread(classLoader, memory);
+        init(thread);
+
+        Frame frame = new Frame(mainClass, mainMethod, 0);
+        thread.push(frame);
+        cpu.run(thread);
+    }
+
+    private void init(Thread thread) {
+        Klass klass = classLoader.loadClass("java/lang/System");
+        Method method = klass.getMethod("initializeSystemClass", "()V");
+        Instruction.doInvoke(thread, klass, method, new Object[0]);
         cpu.run(thread);
     }
 
@@ -56,7 +57,7 @@ public class NaiveJVM {
 
         CPU cpu = new CPU();
         Memory memory = new Memory();
-        BootstrapClassLoader classLoader = new BootstrapClassLoader(classpath, memory.getMethodArea());
+        ClassLoader classLoader = new ClassLoader(classpath, memory.getMethodArea());
 
         NaiveJVM naiveJVM = new NaiveJVM(cpu, memory, classLoader);
         naiveJVM.run(args);

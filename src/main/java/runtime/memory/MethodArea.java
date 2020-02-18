@@ -1,8 +1,8 @@
 package runtime.memory;
 
-import clazz.Clazz;
+import klass.Klass;
 
 import java.util.HashMap;
 
-public class MethodArea extends HashMap<String, Clazz> {
+public class MethodArea extends HashMap<String, Klass> {
 }

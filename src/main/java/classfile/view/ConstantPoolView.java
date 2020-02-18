@@ -1,6 +1,6 @@
 package classfile.view;
 
-import clazz.constant.*;
+import klass.constant.*;
 
 public class ConstantPoolView {
 

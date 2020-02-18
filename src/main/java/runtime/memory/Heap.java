@@ -1,4 +1,8 @@
 package runtime.memory;
 
-public class Heap {
+import runtime.Obj;
+
+import java.util.ArrayList;
+
+public class Heap extends ArrayList<Obj> {
 }

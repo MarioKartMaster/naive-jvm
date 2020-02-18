@@ -1,31 +1,31 @@
 package classfile.view;
 
-import clazz.Clazz;
-import clazz.Field;
-import clazz.Method;
-import clazz.attribute.Attribute;
-import clazz.constant.ConstantPool;
+import klass.Klass;
+import klass.Field;
+import klass.Method;
+import klass.attribute.Attribute;
+import klass.constant.ConstantPool;
 
 import java.util.LinkedHashMap;
 import java.util.List;
 
 public class ClassFileView extends AbstractView {
 
-    private Clazz classFile;
+    private Klass classFile;
     private classfile.view.ConstantPoolView constantPoolView;
     private static LinkedHashMap<Integer, String> classFlags = new LinkedHashMap<>();
     static {
-        classFlags.put(Clazz.ACC_PUBLIC, "PUBLIC");
-        classFlags.put(Clazz.ACC_FINAL, "FINAL");
-        classFlags.put(Clazz.ACC_SUPER, "SUPER");
-        classFlags.put(Clazz.ACC_INTERFACE, "INTERFACE");
-        classFlags.put(Clazz.ACC_ABSTRACT, "ABSTRACT");
-        classFlags.put(Clazz.ACC_SYNTHETIC, "SYNTHETIC");
-        classFlags.put(Clazz.ACC_ANNOTATION, "ANNOTATION");
-        classFlags.put(Clazz.ACC_ENUM, "ENUM");
+        classFlags.put(Klass.ACC_PUBLIC, "PUBLIC");
+        classFlags.put(Klass.ACC_FINAL, "FINAL");
+        classFlags.put(Klass.ACC_SUPER, "SUPER");
+        classFlags.put(Klass.ACC_INTERFACE, "INTERFACE");
+        classFlags.put(Klass.ACC_ABSTRACT, "ABSTRACT");
+        classFlags.put(Klass.ACC_SYNTHETIC, "SYNTHETIC");
+        classFlags.put(Klass.ACC_ANNOTATION, "ANNOTATION");
+        classFlags.put(Klass.ACC_ENUM, "ENUM");
     }
 
-    public ClassFileView(Clazz classFile) {
+    public ClassFileView(Klass classFile) {
 
         this.classFile = classFile;
         ConstantPool constant = classFile.getConstantPool();

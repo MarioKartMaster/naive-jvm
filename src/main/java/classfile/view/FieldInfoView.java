@@ -1,7 +1,7 @@
 package classfile.view;
 
-import clazz.Field;
-import clazz.attribute.Attribute;
+import klass.Field;
+import klass.attribute.Attribute;
 
 import java.util.LinkedHashMap;
 import java.util.List;

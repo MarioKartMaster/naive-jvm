@@ -1,6 +1,6 @@
 package classfile.view;
 
-import clazz.attribute.*;
+import klass.attribute.*;
 
 import java.util.HashMap;
 import java.util.Map;
