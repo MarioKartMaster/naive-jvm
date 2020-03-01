@@ -53,17 +53,17 @@ public class Thread {
     }
 
     public int readConstantIndex() {
-        byte indexByte1 = readCode();
-        byte indexByte2 = readCode();
-        return (indexByte1 << 8) | indexByte2;
+        int indexByte1 = readCode() & 0xFF;
+        int indexByte2 = readCode() & 0xFF;
+        return (indexByte1 << 8) + (indexByte2 << 0);
     }
 
     public Constant getConstant(int index) {
         return currentKlass.getConstantPool().get(index);
     }
 
-    public ClassConstant getClassConstant(int index) {
-        return (ClassConstant) getConstant(index);
+    public KlassConstant getClassConstant(int index) {
+        return (KlassConstant) getConstant(index);
     }
 
     public RefConstant getRefConstant(int intdex) {
@@ -76,6 +76,10 @@ public class Thread {
 
     public MethodRefConstant getMethodRefConstant(int index) {
         return (MethodRefConstant) getConstant(index);
+    }
+
+    public InterfaceMethodRefConstant getInterfaceMethodRefConstant(int index) {
+        return ((InterfaceMethodRefConstant) getConstant(index));
     }
 
     public NameAndTypeConstant getNameAndTypeConstant(int index) {

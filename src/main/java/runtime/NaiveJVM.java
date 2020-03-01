@@ -32,12 +32,12 @@ public class NaiveJVM {
         Klass mainClass = classLoader.loadClass(mainClassName);
 
         // get main method
-        Method mainMethod = mainClass.getMainMethod();
+        Klass.KlassMethodSearchResult klassMethodSearchResult = mainClass.getMainMethod();
 
         Thread thread = new Thread(classLoader, memory);
         init(thread);
 
-        Frame frame = new Frame(mainClass, mainMethod, 0);
+        Frame frame = new Frame(klassMethodSearchResult.getKlass(), klassMethodSearchResult.getMethod(), 0);
         thread.push(frame);
         cpu.run(thread);
     }

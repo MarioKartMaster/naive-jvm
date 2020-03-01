@@ -2,7 +2,10 @@ package klass;
 
 import klass.attribute.Attribute;
 import klass.constant.*;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import runtime.ClassLoader;
 
 import java.util.*;
@@ -61,25 +64,33 @@ public class Klass {
 
         prepare();
 
-        ClassConstant thisClassConstant = constantPool.getClassConstant(thisClass);
-        resolveClassConstant(thisClassConstant);
-        thisClassName = thisClassConstant.getName();
+        KlassConstant thisKlassConstant = constantPool.getClassConstant(thisClass);
+        resolveClassConstant(thisKlassConstant);
+        thisClassName = thisKlassConstant.getName();
 
         if (superClass != 0) {
-            ClassConstant superClassConstant = constantPool.getClassConstant(superClass);
-            resolveClassConstant(superClassConstant);
-            superClassName = superClassConstant.getName();
+            KlassConstant superKlassConstant = constantPool.getClassConstant(superClass);
+            resolveClassConstant(superKlassConstant);
+            superClassName = superKlassConstant.getName();
         }
 
         Arrays.stream(methods).forEach((m) -> this.resolveMethod(m));
         Arrays.stream(fields).forEach((f) -> this.resolveField(f));
     }
 
-    public Method getMainMethod() {
+    public KlassMethodSearchResult getMainMethod() {
         return searchMethod(mainMethodName, mainMethodDescriptor);
     }
 
-    public Method searchMethod(String name, String descriptor) {
+    @Getter
+    @Setter
+    @AllArgsConstructor
+    public static class KlassMethodSearchResult {
+        Klass klass;
+        Method method;
+    }
+
+    public KlassMethodSearchResult searchMethod(String name, String descriptor) {
         Method method = getMethod(name, descriptor);
         if (null == method && 0 != superClass) {
             Klass superKlass = classLoader.loadClass(superClassName);
@@ -90,7 +101,7 @@ public class Klass {
             throw new IllegalArgumentException("method " + thisClassName + "\t" + name  + "\t" + descriptor + " not found");
         }
 
-        return method;
+        return new KlassMethodSearchResult(this, method);
     }
 
     public Method getMethod(String name, String descriptor) {
@@ -100,15 +111,37 @@ public class Klass {
                 .orElse(null);
     }
 
-    public Method getClassInitializeMethod() {
-        return getMethod(classInitializeMethodName, classInitializeMethodDescriptor);
+    @Getter
+    @Setter
+    @AllArgsConstructor
+    public static class KlassFieldSearchResult {
+        Klass klass;
+        Field field;
+    }
+
+    public KlassFieldSearchResult searchField(String name, String descriptor) {
+        Field field = getField(name, descriptor);
+        if (null == field && 0 != superClass) {
+            Klass superKlass = classLoader.loadClass(superClassName);
+            return superKlass.searchField(name, descriptor);
+        }
+
+        if (null == field) {
+            throw new IllegalArgumentException("field " + thisClassName + "\t" + name  + "\t" + descriptor + " not found");
+        }
+
+        return new KlassFieldSearchResult(this, field);
     }
 
     public Field getField(String name, String descriptor) {
-        Optional<Field> field = Arrays.stream(fields)
+        return Arrays.stream(fields)
                 .filter(m -> m.getName().equals(name) && m.getDescriptor().equals(descriptor))
-                .findFirst();
-        return field.orElseThrow(() -> new IllegalArgumentException("method " + thisClassName + name + descriptor + " not found"));
+                .findFirst()
+                .orElse(null);
+    }
+
+    public Method getClassInitializeMethod() {
+        return getMethod(classInitializeMethodName, classInitializeMethodDescriptor);
     }
 
     public void resolveRefConstant(RefConstant refConstant) {
@@ -116,50 +149,55 @@ public class Klass {
             return;
         }
 
-        int classIndex = refConstant.getClassIndex();
         int nameAndTypeIndex = refConstant.getNameAndTypeIndex();
-
-        ClassConstant classConstant = constantPool.getClassConstant(classIndex);
-        resolveClassConstant(classConstant);
-
         NameAndTypeConstant nameAndTypeConstant = constantPool.getNameAndTypeConstant(nameAndTypeIndex);
         resolveNameAndTypeConstant(nameAndTypeConstant);
 
-        String className = classConstant.getName();
+        int classIndex = refConstant.getClassIndex();
+        KlassConstant klassConstant = constantPool.getClassConstant(classIndex);
+        resolveClassConstant(klassConstant);
+
         String name = nameAndTypeConstant.getName();
         String descriptor = nameAndTypeConstant.getDescriptor();
-
-        refConstant.setClazzName(className);
         refConstant.setName(name);
         refConstant.setType(descriptor);
 
-        Klass targetClass = classLoader.loadClass(classConstant.getName());
+        Klass klass = classLoader.loadClass(klassConstant.getName());
 
         if (refConstant instanceof MethodRefConstant) {
+            KlassMethodSearchResult klassMethodSearchResult = klass.searchMethod(name, descriptor);
             MethodRefConstant methodRefConstant = (MethodRefConstant) refConstant;
-            methodRefConstant.setMethod(targetClass.searchMethod(name, descriptor));
+            methodRefConstant.setMethod(klassMethodSearchResult.method);
+            methodRefConstant.setKlass(klassMethodSearchResult.klass);
+            methodRefConstant.setKlassName(klassMethodSearchResult.klass.getThisClassName());
         } else if (refConstant instanceof FieldRefConstant) {
+            KlassFieldSearchResult klassFieldSearchResult = klass.searchField(name, descriptor);
             FieldRefConstant fieldRefConstant = (FieldRefConstant) refConstant;
-            fieldRefConstant.setField(targetClass.getField(name, descriptor));
+            fieldRefConstant.setField(klassFieldSearchResult.field);
+            fieldRefConstant.setKlass(klassFieldSearchResult.klass);
+            fieldRefConstant.setKlassName(klassFieldSearchResult.klass.getThisClassName());
         } else if (refConstant instanceof InterfaceMethodRefConstant) {
+            KlassMethodSearchResult klassMethodSearchResult = klass.searchMethod(name, descriptor);
             InterfaceMethodRefConstant interfaceMethodRefConstant = (InterfaceMethodRefConstant) refConstant;
-            interfaceMethodRefConstant.setMethod(targetClass.searchMethod(name, descriptor));
+            interfaceMethodRefConstant.setMethod(klassMethodSearchResult.method);
+            interfaceMethodRefConstant.setKlass(klassMethodSearchResult.klass);
+            interfaceMethodRefConstant.setKlassName(klassMethodSearchResult.klass.getThisClassName());
         }
 
-        refConstant.setKlass(targetClass);
         refConstant.setResolved(true);
     }
 
-    public void resolveClassConstant(ClassConstant classConstant) {
-        if (classConstant.isResolved()) {
+    public void resolveClassConstant(KlassConstant klassConstant) {
+        if (klassConstant.isResolved()) {
             return;
         }
 
-        int nameIndex = classConstant.getNameIndex();
+        int nameIndex = klassConstant.getNameIndex();
         Utf8Constant utf8Constant = constantPool.getUtf8Constant(nameIndex);
-        String className = utf8Constant.getBytes();
-        classConstant.setName(className);
-        classConstant.setResolved(true);
+        String klassName = utf8Constant.getBytes();
+        klassConstant.setName(klassName);
+//        klassConstant.setKlass(classLoader.loadClass(klassName));
+        klassConstant.setResolved(true);
     }
 
     public void resolveNameAndTypeConstant(NameAndTypeConstant nameAndTypeConstant) {

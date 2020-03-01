@@ -13,7 +13,7 @@ public class ConstantFactory {
         switch (tag) {
             case Constant.CONSTANT_Class:
                 int nameIndex = is.readU2();
-                return new ClassConstant(tag, nameIndex);
+                return new KlassConstant(tag, nameIndex);
             case Constant.CONSTANT_Fieldref:
                 int classIndex = is.readU2();
                 int nameAndTypeIndex = is.readU2();

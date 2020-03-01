@@ -3,6 +3,7 @@ package instruction;
 import java.util.*;
 import java.util.function.Consumer;
 
+import klass.ArrayKlass;
 import klass.Klass;
 import klass.Method;
 import klass.constant.*;
@@ -10,6 +11,7 @@ import runtime.NativeMethod;
 import runtime.Obj;
 import runtime.memory.*;
 import runtime.memory.Thread;
+import sun.jvm.hotspot.oops.ObjArray;
 
 public class Instruction {
     private static Map<Byte, Consumer<Thread>> instructionTable = new HashMap<>();
@@ -34,6 +36,20 @@ public class Instruction {
         instructionTable.put((byte) 0x04, (t) -> {
             Frame currentFrame = t.getCurrentFrame();
             currentFrame.getOperandStack().push(1);
+        });
+
+        // iconst_2
+        instructionNameTable.put((byte) 0x5, "iconst_2");
+        instructionTable.put((byte) 0x05, (t) -> {
+            Frame currentFrame = t.getCurrentFrame();
+            currentFrame.getOperandStack().push(2);
+        });
+
+        // iconst_3
+        instructionNameTable.put((byte) 0x6, "iconst_3");
+        instructionTable.put((byte) 0x06, (t) -> {
+            Frame currentFrame = t.getCurrentFrame();
+            currentFrame.getOperandStack().push(3);
         });
 
         // bipush
@@ -67,11 +83,11 @@ public class Instruction {
             } else if (constant instanceof StringConstant) {
                 String s = t.getCurrentKlass().getUtf8ConstantBytes(((StringConstant) constant).getStringIndex());
                 operandStack.push(s);
-            } else if (constant instanceof ClassConstant) {
-                ClassConstant classConstant = (ClassConstant) constant;
-                t.getCurrentKlass().resolveClassConstant(classConstant);
+            } else if (constant instanceof KlassConstant) {
+                KlassConstant klassConstant = (KlassConstant) constant;
+                t.getCurrentKlass().resolveClassConstant(klassConstant);
                 Obj obj = new Obj("java/lang/class");
-                obj.setField("value", t.getClassLoader().loadClass(classConstant.getName()));
+                obj.setField("value", t.getClassLoader().loadClass(klassConstant.getName()));
                 operandStack.push(obj);
             } else {
                 throw new IllegalStateException("ldc constant type not implemented");
@@ -94,6 +110,17 @@ public class Instruction {
             }
         });
 
+        // iload
+        instructionNameTable.put((byte) 0x15, "iload");
+        instructionTable.put((byte) 0x15, (t) -> {
+            int index = t.readCode() & 0xff;
+
+            Object[] localVariable = t.getCurrentFrame().getLocalVariable();
+            Stack<Object> operandStack = t.getCurrentFrame().getOperandStack();
+
+            operandStack.push(localVariable[index]);
+        });
+
         // iload_0
         instructionNameTable.put((byte) 0x1a, "iload_0");
         instructionTable.put((byte) 0x1a, (t) -> {
@@ -108,6 +135,22 @@ public class Instruction {
             Object[] localVariable = t.getCurrentFrame().getLocalVariable();
             Stack<Object> operandStack = t.getCurrentFrame().getOperandStack();
             operandStack.push(localVariable[1]);
+        });
+
+        // iload_2
+        instructionNameTable.put((byte) 0x1c, "iload_2");
+        instructionTable.put((byte) 0x1c, (t) -> {
+            Object[] localVariable = t.getCurrentFrame().getLocalVariable();
+            Stack<Object> operandStack = t.getCurrentFrame().getOperandStack();
+            operandStack.push(localVariable[2]);
+        });
+
+        // iload_3
+        instructionNameTable.put((byte) 0x1d, "iload_3");
+        instructionTable.put((byte) 0x1d, (t) -> {
+            Object[] localVariable = t.getCurrentFrame().getLocalVariable();
+            Stack<Object> operandStack = t.getCurrentFrame().getOperandStack();
+            operandStack.push(localVariable[3]);
         });
 
         // fload_0
@@ -149,6 +192,38 @@ public class Instruction {
             currentFrame.getOperandStack().push(data);
         });
 
+        // aload_2
+        instructionNameTable.put((byte) 0x2c, "aload_2");
+        instructionTable.put((byte) 0x2c, (t) -> {
+            Frame currentFrame = t.getCurrentFrame();
+            Object data = currentFrame.getLocalVariable()[2];
+            currentFrame.getOperandStack().push(data);
+        });
+
+        // aload_3
+        instructionNameTable.put((byte) 0x2d, "aload_3");
+        instructionTable.put((byte) 0x2d, (t) -> {
+            Frame currentFrame = t.getCurrentFrame();
+            Object data = currentFrame.getLocalVariable()[3];
+            currentFrame.getOperandStack().push(data);
+        });
+
+        // istore
+        instructionNameTable.put((byte) 0x36, "istore");
+        instructionTable.put((byte) 0x36, (t) -> {
+            int index = t.readCode() & 0xff;
+            int value = (int) t.getCurrentFrame().getOperandStack().pop();
+            t.getCurrentFrame().getLocalVariable()[index] = value;
+        });
+
+        // istore_0
+        instructionNameTable.put((byte) 0x3b, "istore_0");
+        instructionTable.put((byte) 0x3b, (t) -> {
+            Object data = t.getCurrentFrame().getOperandStack().pop();
+            Object[] localVariable = t.getCurrentFrame().getLocalVariable();
+            localVariable[0] = data;
+        });
+
         // istore_1
         instructionNameTable.put((byte) 0x3c, "istore_1");
         instructionTable.put((byte) 0x3c, (t) -> {
@@ -157,12 +232,52 @@ public class Instruction {
             localVariable[1] = data;
         });
 
+        // istore_2
+        instructionNameTable.put((byte) 0x3d, "istore_2");
+        instructionTable.put((byte) 0x3d, (t) -> {
+            Object data = t.getCurrentFrame().getOperandStack().pop();
+            Object[] localVariable = t.getCurrentFrame().getLocalVariable();
+            localVariable[2] = data;
+        });
+
+        // istore_3
+        instructionNameTable.put((byte) 0x3e, "istore_3");
+        instructionTable.put((byte) 0x3e, (t) -> {
+            Object data = t.getCurrentFrame().getOperandStack().pop();
+            Object[] localVariable = t.getCurrentFrame().getLocalVariable();
+            localVariable[3] = data;
+        });
+
+        // astore_0
+        instructionNameTable.put((byte) 0x4b, "astore_0");
+        instructionTable.put((byte) 0x4b, (t) -> {
+            Object data = t.getCurrentFrame().getOperandStack().pop();
+            Object[] localVariable = t.getCurrentFrame().getLocalVariable();
+            localVariable[0] = data;
+        });
+
         // astore_1
         instructionNameTable.put((byte) 0x4c, "astore_1");
         instructionTable.put((byte) 0x4c, (t) -> {
             Object data = t.getCurrentFrame().getOperandStack().pop();
             Object[] localVariable = t.getCurrentFrame().getLocalVariable();
             localVariable[1] = data;
+        });
+
+        // astore_2
+        instructionNameTable.put((byte) 0x4d, "astore_2");
+        instructionTable.put((byte) 0x4d, (t) -> {
+            Object data = t.getCurrentFrame().getOperandStack().pop();
+            Object[] localVariable = t.getCurrentFrame().getLocalVariable();
+            localVariable[2] = data;
+        });
+
+        // astore_3
+        instructionNameTable.put((byte) 0x4e, "astore_3");
+        instructionTable.put((byte) 0x4e, (t) -> {
+            Object data = t.getCurrentFrame().getOperandStack().pop();
+            Object[] localVariable = t.getCurrentFrame().getLocalVariable();
+            localVariable[3] = data;
         });
 
         // pop
@@ -208,12 +323,29 @@ public class Instruction {
             t.getCurrentFrame().getOperandStack().push(value1 * value2);
         });
 
+        // irem
+        instructionNameTable.put((byte) 0x70, "irem");
+        instructionTable.put((byte) 0x70, t -> {
+            int value2 = (int) t.getCurrentFrame().getOperandStack().pop();
+            int value1 = (int) t.getCurrentFrame().getOperandStack().pop();
+            int result = value1 - (value1 / value2) * value2;
+            t.getCurrentFrame().getOperandStack().push(result);
+        });
+
         // lshl
         instructionNameTable.put((byte) 0x79, "lshl");
         instructionTable.put((byte) 0x79, t -> {
             int bits = (int) t.getCurrentFrame().getOperandStack().pop();
             long val = (long) t.getCurrentFrame().getOperandStack().pop();
             t.getCurrentFrame().getOperandStack().push(val << bits);
+        });
+
+        // iand
+        instructionNameTable.put((byte) 0x7e, "iand");
+        instructionTable.put((byte) 0x7e, t -> {
+            int value1 = (int) t.getCurrentFrame().getOperandStack().pop();
+            int value2 = (int) t.getCurrentFrame().getOperandStack().pop();
+            t.getCurrentFrame().getOperandStack().push(value1 & value2);
         });
 
         // land
@@ -419,9 +551,7 @@ public class Instruction {
         // getstatic
         instructionNameTable.put((byte) 0xb2, "getstatic");
         instructionTable.put((byte) 0xb2, (t) -> {
-            byte indexByte1 = t.readCode();
-            byte indexByte2 = t.readCode();
-            int index = (indexByte1 << 8) | indexByte2;
+            int index = t.readConstantIndex();
 
             Klass klass = t.getCurrentKlass();
             FieldRefConstant fieldRefConstant = t.getFieldRefConstant(index);
@@ -503,82 +633,92 @@ public class Instruction {
         // invokevirtual
         instructionNameTable.put((byte) 0xb6, "invokevirtual");
         instructionTable.put((byte) 0xb6, (t) -> {
-            byte indexByte1 = t.readCode();
-            byte indexByte2 = t.readCode();
-            int index = (indexByte1 << 8) | indexByte2;
+            int index = t.readConstantIndex();
 
             MethodRefConstant methodRefConstant = t.getMethodRefConstant(index);
             t.getCurrentKlass().resolveRefConstant(methodRefConstant);
-            Method targetMethod = methodRefConstant.getMethod();
+            Method method = methodRefConstant.getMethod();
+            Klass klass = methodRefConstant.getKlass();
 
-            List<String> parameters = targetMethod.getParameters();
+            List<String> parameters = method.getParameters();
             Object[] args = t.getCurrentFrame().getOperandStack().popByParametersWithThis(parameters);
 
-            Klass targetKlass = t.getClassLoader().loadClass(((Obj) args[0]).getType());
-            targetMethod = targetKlass.searchMethod(targetMethod.getName(), targetMethod.getDescriptor());
+            System.out.format("invoke virtual %s %s %s\n", methodRefConstant.getKlassName(), methodRefConstant.getName(), methodRefConstant.getType());
 
-            System.out.format("invoke virtual %s %s %s\n", methodRefConstant.getClazzName(), methodRefConstant.getName(), methodRefConstant.getType());
-
-            doInvoke(t, targetKlass, targetMethod, args);
+            doInvoke(t, klass, method, args);
         });
 
         // invokespecial
         instructionNameTable.put((byte) 0xb7, "invokespecial");
         instructionTable.put((byte) 0xb7, (t) -> {
-            byte indexByte1 = t.readCode();
-            byte indexByte2 = t.readCode();
-            int index = (indexByte1 << 8) | indexByte2;
+            int index = t.readConstantIndex();
 
-            Klass klass = t.getCurrentKlass();
             MethodRefConstant methodRefConstant = t.getMethodRefConstant(index);
-            klass.resolveRefConstant(methodRefConstant);
-            Klass targetKlass = methodRefConstant.getKlass();
-            Method targetMethod = methodRefConstant.getMethod();
+            t.getCurrentKlass().resolveRefConstant(methodRefConstant);
+            Method method = methodRefConstant.getMethod();
+            Klass klass = methodRefConstant.getKlass();
 
-            List<String> parameters = targetMethod.getParameters();
+            List<String> parameters = method.getParameters();
             Object[] args = t.getCurrentFrame().getOperandStack().popByParametersWithThis(parameters);
 
-            System.out.format("invoke special %s %s %s\n", methodRefConstant.getClazzName(), methodRefConstant.getName(), methodRefConstant.getType());
+            System.out.format("invoke special %s %s %s\n", methodRefConstant.getKlassName(), methodRefConstant.getName(), methodRefConstant.getType());
 
-            doInvoke(t, targetKlass, targetMethod, args);
+            doInvoke(t, klass, method, args);
         });
 
         // invokestatic
         instructionNameTable.put((byte) 0xb8, "invokestatic");
         instructionTable.put((byte) 0xb8, (t) -> {
-            byte indexByte1 = t.readCode();
-            byte indexByte2 = t.readCode();
-            int index = (indexByte1 << 8) | indexByte2;
+            int index = t.readConstantIndex();
 
-            Klass klass = t.getCurrentKlass();
             MethodRefConstant methodRefConstant = t.getMethodRefConstant(index);
-            klass.resolveRefConstant(methodRefConstant);
+            t.getCurrentKlass().resolveRefConstant(methodRefConstant);
+            Method method = methodRefConstant.getMethod();
+            Klass klass = methodRefConstant.getKlass();
 
-            Klass targetKlass = methodRefConstant.getKlass();
-            if (! targetKlass.isInitialized()) {
+            if (! klass.isInitialized()) {
                 t.incrPc(-3);
-                initClass(t, targetKlass);
+                initClass(t, klass);
                 return;
             }
-            Method targetMethod = methodRefConstant.getMethod();
 
-            List<String> parameters = targetMethod.getParameters();
+            List<String> parameters = method.getParameters();
             Object[] args = t.getCurrentFrame().getOperandStack().popByParameters(parameters);
 
-            System.out.format("invoke static %s %s %s\n", methodRefConstant.getClazzName(), methodRefConstant.getName(), methodRefConstant.getType());
+            System.out.format("invoke static %s %s %s\n", methodRefConstant.getKlassName(), methodRefConstant.getName(), methodRefConstant.getType());
 
-            doInvoke(t, targetKlass, targetMethod, args);
+            doInvoke(t, klass, method, args);
+        });
+
+        // invokeinterface
+        instructionNameTable.put((byte) 0xb9, "invokeinterface");
+        instructionTable.put((byte) 0xb9, (t) -> {
+            int index = t.readConstantIndex();
+            t.readConstantIndex();
+
+            InterfaceMethodRefConstant interfaceMethodRefConstant = t.getInterfaceMethodRefConstant(index);
+            t.getCurrentKlass().resolveRefConstant(interfaceMethodRefConstant);
+            Method method = interfaceMethodRefConstant.getMethod();
+
+            List<String> parameters = method.getParameters();
+            Object[] args = t.getCurrentFrame().getOperandStack().popByParametersWithThis(parameters);
+
+            String runtimeKlassType = ((Obj) args[0]).getType();
+            Klass klass = t.getClassLoader().loadClass(runtimeKlassType);
+            Klass.KlassMethodSearchResult klassMethodSearchResult = klass.searchMethod(method.getName(), method.getDescriptor());
+
+            System.out.format("invoke interface %s %s %s\n", interfaceMethodRefConstant.getKlassName(), interfaceMethodRefConstant.getName(), interfaceMethodRefConstant.getType());
+
+            doInvoke(t, klassMethodSearchResult.getKlass(), klassMethodSearchResult.getMethod(), args);
         });
 
         // new
         instructionNameTable.put((byte) 0xbb, "new");
         instructionTable.put((byte) 0xbb, (t) -> {
-            byte indexByte1 = t.readCode();
-            byte indexByte2 = t.readCode();
-            int index = (indexByte1 << 8) | indexByte2;
+            int index = t.readConstantIndex();
 
             Klass klass = t.getCurrentKlass();
-            ClassConstant constant = t.getClassConstant(index);
+            KlassConstant constant = t.getClassConstant(index);
             klass.resolveClassConstant(constant);
 
             String type = constant.getName();
@@ -588,12 +728,44 @@ public class Instruction {
 
             Klass typeKlass = t.getClassLoader().loadClass(type);
             Obj obj = new Obj(type);
-            Arrays.stream(typeKlass.getFields())
-                    .filter((f) -> ! f.isStatic())
-                    .forEach((f) -> {
-                        // TODO: init field default value
-                        obj.setField(f.getName(), null);
-                    });
+
+            while (typeKlass != null) {
+                Arrays.stream(typeKlass.getFields())
+                        .filter((f) -> !f.isStatic())
+                        .forEach((f) -> {
+                            // TODO: init field default value
+                            String descriptor = f.getDescriptor();
+                            Object val;
+                            if (descriptor.equals("B")) {
+                                val = (byte) 0;
+                            } else if (descriptor.equals("C")) {
+                                val = (char) 0;
+                            } else if (descriptor.equals("D")) {
+                                val = (double) 0;
+                            } else if (descriptor.equals("F")) {
+                                val = (float) 0;
+                            } else if (descriptor.equals("I")) {
+                                val = (int) 0;
+                            } else if (descriptor.equals("J")) {
+                                val = (long) 0;
+                            } else if (descriptor.equals("S")) {
+                                val = (short) 0;
+                            } else if (descriptor.equals("Z")) {
+                                val = false;
+                            } else if (descriptor.startsWith("L") || descriptor.startsWith("[")) {
+                                val = null;
+                            } else {
+                                throw new IllegalStateException("invalid field descriptro: " + descriptor);
+                            }
+                            obj.setField(f.getName(), val);
+                        });
+                String superClassName = typeKlass.getSuperClassName();
+                if (superClassName != null) {
+                    typeKlass = t.getClassLoader().loadClass(superClassName);
+                } else {
+                    typeKlass = null;
+                }
+            }
 
             Heap heap = t.getHeap();
             heap.add(obj);
@@ -609,7 +781,7 @@ public class Instruction {
 
             // TODO: support non-class constant
             Klass klass = t.getCurrentKlass();
-            ClassConstant constant = t.getClassConstant(index);
+            KlassConstant constant = t.getClassConstant(index);
             klass.resolveClassConstant(constant);
             String type = constant.getName();
             int count = (int) t.getCurrentFrame().getOperandStack().pop();
@@ -617,14 +789,26 @@ public class Instruction {
             t.getCurrentFrame().getOperandStack().push(ref);
         });
 
-        // new
+        // arraylength
+        instructionNameTable.put((byte) 0xbe, "arraylength");
+        instructionTable.put((byte) 0xbe, (t) -> {
+            ArrayObj arrayRef = (ArrayObj) t.getCurrentFrame().getOperandStack().pop();
+            t.getCurrentFrame().getOperandStack().push(arrayRef.getLength());
+        });
+
+        // checkcast
+        instructionNameTable.put((byte) 0xc0, "checkcast");
+        instructionTable.put((byte) 0xc0, (t) -> {
+            // TODO: to be implement
+            int index = t.readConstantIndex();
+        });
+
+        // ifnonnull
         instructionNameTable.put((byte) 0xc7, "ifnonnull");
         instructionTable.put((byte) 0xc7, (t) -> {
-            Integer value = (Integer) t.getCurrentFrame().getOperandStack().pop();
-            byte indexByte1 = t.readCode();
-            byte indexByte2 = t.readCode();
+            int index = t.readConstantIndex();
+            Object value = t.getCurrentFrame().getOperandStack().pop();
             if (value != null) {
-                int index = (indexByte1 << 8) | indexByte2;
                 t.incrPc(index - 3);
             }
         });
@@ -651,6 +835,8 @@ public class Instruction {
                 NativeMethod.doubleLongBitsToDouble(t, klass, method, args);
             } else if (klass.getThisClassName().equals("sun/misc/VM") && method.getName().equals("initialize")) {
                 NativeMethod.vmInitialize(t, klass, method, args);
+            } else if (klass.getThisClassName().equals("java/lang/Object") && method.getName().equals("hashCode")) {
+                NativeMethod.objectHashCode(t, klass, method, args);
             } else {
                 throw new IllegalStateException("native method not found " + klass.getThisClassName() + " " + method.getName());
             }

@@ -26,6 +26,10 @@ public class NativeMethod {
     public static void vmInitialize(Thread t, Klass klass, Method method, Object[] args) {
     }
 
+    public static void objectHashCode(Thread t, Klass klass, Method method, Object[] args) {
+        t.getCurrentFrame().getOperandStack().push(args[0].hashCode());
+    }
+
     public static void floatFloatToRawIntBits(Thread t, Klass klass, Method method, Object[] args) {
         int i = Float.floatToRawIntBits((float) args[0]);
         t.getCurrentFrame().getOperandStack().push(i);

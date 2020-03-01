@@ -34,7 +34,7 @@ public class ConstantPoolView {
     public ConvertToStringStrategy utf8Strategy = (info) -> ((Utf8Constant) info).getBytes();
 
     public ConvertToStringStrategy classStrategy = info -> {
-        ClassConstant i = (ClassConstant) info;
+        KlassConstant i = (KlassConstant) info;
         int nameIndex = i.getNameIndex();
         return this.infoConvertToStringStrategy.convert(constantPool.get(nameIndex));
     };

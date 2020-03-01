@@ -10,7 +10,7 @@ public class RefConstant extends Constant {
     private int nameAndTypeIndex;
 
     @Setter
-    private String clazzName;
+    private String klassName;
     @Setter
     private String name;
     @Setter

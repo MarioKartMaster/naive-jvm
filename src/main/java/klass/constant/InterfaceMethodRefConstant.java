@@ -1,8 +1,10 @@
 package klass.constant;
 
 import klass.Method;
+import lombok.Getter;
 import lombok.Setter;
 
+@Getter
 public class InterfaceMethodRefConstant extends RefConstant {
 
     @Setter

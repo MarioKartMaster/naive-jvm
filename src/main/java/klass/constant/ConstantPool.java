@@ -8,8 +8,8 @@ public class ConstantPool extends ArrayList<Constant> {
         return get(index);
     }
 
-    public ClassConstant getClassConstant(int index) {
-        return (ClassConstant) getConstant(index);
+    public KlassConstant getClassConstant(int index) {
+        return (KlassConstant) getConstant(index);
     }
 
     public RefConstant getRefConstant(int intdex) {
@@ -48,8 +48,8 @@ public class ConstantPool extends ArrayList<Constant> {
             return constantToString(index);
         }
 
-        if (constant instanceof ClassConstant) {
-            index = ((ClassConstant) constant).getNameIndex();
+        if (constant instanceof KlassConstant) {
+            index = ((KlassConstant) constant).getNameIndex();
             return constantToString(index);
         }
 
