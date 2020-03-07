@@ -3,7 +3,6 @@ package instruction;
 import java.util.*;
 import java.util.function.Consumer;
 
-import klass.ArrayKlass;
 import klass.Klass;
 import klass.Method;
 import klass.constant.*;
@@ -11,7 +10,6 @@ import runtime.NativeMethod;
 import runtime.Obj;
 import runtime.memory.*;
 import runtime.memory.Thread;
-import sun.jvm.hotspot.oops.ObjArray;
 
 public class Instruction {
     private static Map<Byte, Consumer<Thread>> instructionTable = new HashMap<>();
@@ -82,7 +80,11 @@ public class Instruction {
                 operandStack.push(data);
             } else if (constant instanceof StringConstant) {
                 String s = t.getCurrentKlass().getUtf8ConstantBytes(((StringConstant) constant).getStringIndex());
-                operandStack.push(s);
+                Obj obj = new Obj("java/lang/String");
+                char[] value = new char[s.length()];
+                s.getChars(0, s.length(), value, 0);
+                obj.setField("value", value);
+                operandStack.push(obj);
             } else if (constant instanceof KlassConstant) {
                 KlassConstant klassConstant = (KlassConstant) constant;
                 t.getCurrentKlass().resolveClassConstant(klassConstant);
@@ -121,6 +123,17 @@ public class Instruction {
             operandStack.push(localVariable[index]);
         });
 
+        // aload
+        instructionNameTable.put((byte) 0x19, "aload");
+        instructionTable.put((byte) 0x19, (t) -> {
+            int index = t.readCode() & 0xff;
+
+            Object[] localVariable = t.getCurrentFrame().getLocalVariable();
+            Stack<Object> operandStack = t.getCurrentFrame().getOperandStack();
+
+            operandStack.push(localVariable[index]);
+        });
+
         // iload_0
         instructionNameTable.put((byte) 0x1a, "iload_0");
         instructionTable.put((byte) 0x1a, (t) -> {
@@ -148,6 +161,38 @@ public class Instruction {
         // iload_3
         instructionNameTable.put((byte) 0x1d, "iload_3");
         instructionTable.put((byte) 0x1d, (t) -> {
+            Object[] localVariable = t.getCurrentFrame().getLocalVariable();
+            Stack<Object> operandStack = t.getCurrentFrame().getOperandStack();
+            operandStack.push(localVariable[3]);
+        });
+
+        // lload_0
+        instructionNameTable.put((byte) 0x1e, "lload_0");
+        instructionTable.put((byte) 0x1e, (t) -> {
+            Object[] localVariable = t.getCurrentFrame().getLocalVariable();
+            Stack<Object> operandStack = t.getCurrentFrame().getOperandStack();
+            operandStack.push(localVariable[0]);
+        });
+
+        // lload_1
+        instructionNameTable.put((byte) 0x1f, "lload_1");
+        instructionTable.put((byte) 0x1f, (t) -> {
+            Object[] localVariable = t.getCurrentFrame().getLocalVariable();
+            Stack<Object> operandStack = t.getCurrentFrame().getOperandStack();
+            operandStack.push(localVariable[1]);
+        });
+
+        // lload_2
+        instructionNameTable.put((byte) 0x20, "lload_2");
+        instructionTable.put((byte) 0x20, (t) -> {
+            Object[] localVariable = t.getCurrentFrame().getLocalVariable();
+            Stack<Object> operandStack = t.getCurrentFrame().getOperandStack();
+            operandStack.push(localVariable[2]);
+        });
+
+        // lload_3
+        instructionNameTable.put((byte) 0x21, "lload_3");
+        instructionTable.put((byte) 0x21, (t) -> {
             Object[] localVariable = t.getCurrentFrame().getLocalVariable();
             Stack<Object> operandStack = t.getCurrentFrame().getOperandStack();
             operandStack.push(localVariable[3]);
@@ -208,12 +253,28 @@ public class Instruction {
             currentFrame.getOperandStack().push(data);
         });
 
+        // aaload
+        instructionNameTable.put((byte) 0x32, "aaload");
+        instructionTable.put((byte) 0x32, (t) -> {
+            int index = (int) t.getCurrentFrame().getOperandStack().pop();
+            ArrayObj arrayRef = ((ArrayObj) t.getCurrentFrame().getOperandStack().pop());
+            t.getCurrentFrame().getOperandStack().push(arrayRef.getData()[index]);
+        });
+
         // istore
         instructionNameTable.put((byte) 0x36, "istore");
         instructionTable.put((byte) 0x36, (t) -> {
             int index = t.readCode() & 0xff;
             int value = (int) t.getCurrentFrame().getOperandStack().pop();
             t.getCurrentFrame().getLocalVariable()[index] = value;
+        });
+
+        // astore
+        instructionNameTable.put((byte) 0x3a, "astore");
+        instructionTable.put((byte) 0x3a, (t) -> {
+            int index = t.readCode() & 0xff;
+            Object arrayRef = t.getCurrentFrame().getOperandStack().pop();
+            t.getCurrentFrame().getLocalVariable()[index] = arrayRef;
         });
 
         // istore_0
@@ -280,6 +341,16 @@ public class Instruction {
             localVariable[3] = data;
         });
 
+
+        // aastore
+        instructionNameTable.put((byte) 0x53, "aastore");
+        instructionTable.put((byte) 0x53, (t) -> {
+            Object value = t.getCurrentFrame().getOperandStack().pop();
+            int index = (int) t.getCurrentFrame().getOperandStack().pop();
+            ArrayObj arrayRef = (ArrayObj) t.getCurrentFrame().getOperandStack().pop();
+            arrayRef.getData()[index] = value;
+        });
+
         // pop
         instructionNameTable.put((byte) 0x57, "pop");
         instructionTable.put((byte) 0x57, (t) -> {
@@ -314,6 +385,16 @@ public class Instruction {
             operandStack.push(result);
         });
 
+        // isub
+        instructionNameTable.put((byte) 0x64, "isub");
+        instructionTable.put((byte) 0x64, (t) -> {
+            Stack<Object> operandStack = t.getCurrentFrame().getOperandStack();
+            int v2 = (int) operandStack.pop();
+            int v1 = (int) operandStack.pop();
+            int result = v1 - v2;
+            operandStack.push(result);
+        });
+
         // fmul
         instructionNameTable.put((byte) 0x6a, "fmul");
         instructionTable.put((byte) 0x6a, (t) -> {
@@ -340,6 +421,14 @@ public class Instruction {
             t.getCurrentFrame().getOperandStack().push(val << bits);
         });
 
+        // iushr
+        instructionNameTable.put((byte) 0x7c, "iushr");
+        instructionTable.put((byte) 0x7c, t -> {
+            int value2 = (int) t.getCurrentFrame().getOperandStack().pop();
+            int value1 = (int) t.getCurrentFrame().getOperandStack().pop();
+            t.getCurrentFrame().getOperandStack().push(value1 >>> value2);
+        });
+
         // iand
         instructionNameTable.put((byte) 0x7e, "iand");
         instructionTable.put((byte) 0x7e, t -> {
@@ -354,6 +443,14 @@ public class Instruction {
             long value1 = (long) t.getCurrentFrame().getOperandStack().pop();
             long value2 = (long) t.getCurrentFrame().getOperandStack().pop();
             t.getCurrentFrame().getOperandStack().push(value1 & value2);
+        });
+
+        // ixor
+        instructionNameTable.put((byte) 0x82, "ixor");
+        instructionTable.put((byte) 0x82, (t) -> {
+            int value1 = (int) t.getCurrentFrame().getOperandStack().pop();
+            int value2 = (int) t.getCurrentFrame().getOperandStack().pop();
+            t.getCurrentFrame().getOperandStack().push(value1 ^ value2);
         });
 
         // i2l
@@ -471,6 +568,20 @@ public class Instruction {
             }
         });
 
+        // if_icmpne
+        instructionNameTable.put((byte) 0xa0, "if_icmpne");
+        instructionTable.put((byte) 0xa0, (t) -> {
+            byte indexByte1 = t.readCode();
+            byte indexByte2 = t.readCode();
+            int value2 = (int) t.getCurrentFrame().getOperandStack().pop();
+            int value1 = (int) t.getCurrentFrame().getOperandStack().pop();
+
+            if (value1 != value2) {
+                int index = (indexByte1 << 8) | indexByte2;
+                t.incrPc(index - 3);
+            }
+        });
+
         // if_icmplt
         instructionNameTable.put((byte) 0xa1, "if_icmplt");
         instructionTable.put((byte) 0xa1, (t) -> {
@@ -480,6 +591,34 @@ public class Instruction {
             int value1 = (int) t.getCurrentFrame().getOperandStack().pop();
 
             if (value1 < value2) {
+                int index = (indexByte1 << 8) | indexByte2;
+                t.incrPc(index - 3);
+            }
+        });
+
+        // if_icmpge
+        instructionNameTable.put((byte) 0xa2, "if_icmpge");
+        instructionTable.put((byte) 0xa2, (t) -> {
+            byte indexByte1 = t.readCode();
+            byte indexByte2 = t.readCode();
+            int value2 = (int) t.getCurrentFrame().getOperandStack().pop();
+            int value1 = (int) t.getCurrentFrame().getOperandStack().pop();
+
+            if (value1 >= value2) {
+                int index = (indexByte1 << 8) | indexByte2;
+                t.incrPc(index - 3);
+            }
+        });
+
+        // if_icmplt
+        instructionNameTable.put((byte) 0xa3, "if_icmpgt");
+        instructionTable.put((byte) 0xa3, (t) -> {
+            byte indexByte1 = t.readCode();
+            byte indexByte2 = t.readCode();
+            int value2 = (int) t.getCurrentFrame().getOperandStack().pop();
+            int value1 = (int) t.getCurrentFrame().getOperandStack().pop();
+
+            if (value1 > value2) {
                 int index = (indexByte1 << 8) | indexByte2;
                 t.incrPc(index - 3);
             }
@@ -497,6 +636,42 @@ public class Instruction {
                 int index = (indexByte1 << 8) | indexByte2;
                 t.incrPc(index - 3);
             }
+        });
+
+        // if_acmpeq
+        instructionNameTable.put((byte) 0xa5, "if_acmpeq");
+        instructionTable.put((byte) 0xa5, (t) -> {
+            byte indexByte1 = t.readCode();
+            byte indexByte2 = t.readCode();
+            Obj value2 = (Obj) t.getCurrentFrame().getOperandStack().pop();
+            Obj value1 = (Obj) t.getCurrentFrame().getOperandStack().pop();
+
+            if (value1 == value2) {
+                int index = (indexByte1 << 8) | indexByte2;
+                t.incrPc(index - 3);
+            }
+        });
+
+        // if_acmpne
+        instructionNameTable.put((byte) 0xa6, "if_acmpne");
+        instructionTable.put((byte) 0xa6, (t) -> {
+            byte indexByte1 = t.readCode();
+            byte indexByte2 = t.readCode();
+            Obj value2 = (Obj) t.getCurrentFrame().getOperandStack().pop();
+            Obj value1 = (Obj) t.getCurrentFrame().getOperandStack().pop();
+
+            if (value1 != value2) {
+                int index = (indexByte1 << 8) | indexByte2;
+                t.incrPc(index - 3);
+            }
+        });
+
+        // goto
+        instructionNameTable.put((byte) 0xa7, "goto");
+        instructionTable.put((byte) 0xa7, (t) -> {
+            Byte indexByte1 = t.readCode();
+            Byte indexByte2 = t.readCode();
+            t.incrPc((indexByte1 << 8) + indexByte2 - 3);
         });
 
         // ireturn
@@ -803,6 +978,25 @@ public class Instruction {
             int index = t.readConstantIndex();
         });
 
+        // instanceof
+        instructionNameTable.put((byte) 0xc1, "instanceof");
+        instructionTable.put((byte) 0xc1, (t) -> {
+            // TODO: to be implement
+            int index = t.readConstantIndex();
+            Object objRef = t.getCurrentFrame().getOperandStack().pop();
+            t.getCurrentFrame().getOperandStack().push(0);
+        });
+
+        // ifnull
+        instructionNameTable.put((byte) 0xc6, "ifnull");
+        instructionTable.put((byte) 0xc6, (t) -> {
+            int index = t.readConstantIndex();
+            Object value = t.getCurrentFrame().getOperandStack().pop();
+            if (value == null) {
+                t.incrPc(index - 3);
+            }
+        });
+
         // ifnonnull
         instructionNameTable.put((byte) 0xc7, "ifnonnull");
         instructionTable.put((byte) 0xc7, (t) -> {
@@ -825,6 +1019,8 @@ public class Instruction {
                 NativeMethod.classDesiredAssertionStatus0(t, klass, method, args);
             } else if (klass.getThisClassName().equals("java/lang/Class") && method.getName().equals("registerNatives")) {
                 NativeMethod.classRegisterNatives(t, klass, method, args);
+            } else if (klass.getThisClassName().equals("sun/misc/Unsafe") && method.getName().equals("registerNatives")) {
+                NativeMethod.unsafeRegisterNatives(t, klass, method, args);
             } else if (klass.getThisClassName().equals("java/lang/System") && method.getName().equals("registerNatives")) {
                 NativeMethod.systemRegisterNatives(t, klass, method, args);
             } else if (klass.getThisClassName().equals("java/lang/Float") && method.getName().equals("floatToRawIntBits")) {
@@ -837,6 +1033,8 @@ public class Instruction {
                 NativeMethod.vmInitialize(t, klass, method, args);
             } else if (klass.getThisClassName().equals("java/lang/Object") && method.getName().equals("hashCode")) {
                 NativeMethod.objectHashCode(t, klass, method, args);
+            } else if (klass.getThisClassName().equals("java/io/FileDescriptor") && method.getName().equals("initIDs")) {
+                NativeMethod.fileDescriptorInitIDs(t, klass, method, args);
             } else {
                 throw new IllegalStateException("native method not found " + klass.getThisClassName() + " " + method.getName());
             }

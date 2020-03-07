@@ -47,7 +47,7 @@ public class Thread {
         currentMethod = currentFrame.getMethod();
     }
 
-    public Byte readCode() {
+    public byte readCode() {
         byte[] codes = currentFrame.getCodes();
         return codes[pc++];
     }

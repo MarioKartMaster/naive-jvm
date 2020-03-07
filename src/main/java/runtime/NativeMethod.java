@@ -23,6 +23,9 @@ public class NativeMethod {
     public static void systemRegisterNatives(Thread t, Klass klass, Method method, Object[] args) {
     }
 
+    public static void unsafeRegisterNatives(Thread t, Klass klass, Method method, Object[] args) {
+    }
+
     public static void vmInitialize(Thread t, Klass klass, Method method, Object[] args) {
     }
 
@@ -43,5 +46,8 @@ public class NativeMethod {
     public static void doubleLongBitsToDouble(Thread t, Klass klass, Method method, Object[] args) {
         double i = Double.longBitsToDouble((long) args[0]);
         t.getCurrentFrame().getOperandStack().push(i);
+    }
+
+    public static void fileDescriptorInitIDs(Thread t, Klass klass, Method method, Object[] args) {
     }
 }
