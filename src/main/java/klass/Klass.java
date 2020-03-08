@@ -7,6 +7,8 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import runtime.ClassLoader;
+import runtime.Obj;
+import runtime.memory.Memory;
 
 import java.util.*;
 
@@ -237,6 +239,10 @@ public class Klass {
         field.setName(getUtf8ConstantBytes(nameIndex));
         field.setDescriptor(getUtf8ConstantBytes(descriptorIndex));
         field.setResolved(true);
+    }
+
+    // TODO: link obj with constant
+    public void resolveStringConstant(StringConstant stringConstant, Obj obj) {
     }
 
     public String getUtf8ConstantBytes(int index) {

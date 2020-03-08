@@ -52,10 +52,10 @@ public class Thread {
         return codes[pc++];
     }
 
-    public int readConstantIndex() {
+    public int readUnsignedShort() {
         int indexByte1 = readCode() & 0xFF;
         int indexByte2 = readCode() & 0xFF;
-        return (indexByte1 << 8) + (indexByte2 << 0);
+        return (indexByte1 << 8) | (indexByte2 << 0);
     }
 
     public Constant getConstant(int index) {

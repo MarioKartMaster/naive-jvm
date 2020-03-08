@@ -24,4 +24,11 @@ public class Obj {
     public void setField(String name, Object val) {
         fields.put(name, val);
     }
+
+    @Override
+    public String toString() {
+        return "Obj{" +
+                "type='" + type + '\'' +
+                '}';
+    }
 }
