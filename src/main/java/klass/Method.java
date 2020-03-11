@@ -57,24 +57,43 @@ public class Method {
         }
 
         List<String> result = new ArrayList<>();
-        String part = "";
-        boolean flag = false;
+        String refPart = "";
+        String arrayPart = "";
+        boolean refFlag = false;
+        boolean arrayFlag = false;
         for (int i = 0; i < descriptor.length(); i++) {
             char ch = descriptor.charAt(i);
-            if (flag && ch != ';') {
-                part += ch;
-                continue;
-            }
-            if (ch == 'B' || ch == 'C' || ch == 'D' || ch == 'F' || ch == 'I' || ch == 'J' || ch == 'S' || ch == 'Z') {
-                result.add(String.valueOf(ch));
-            } else if (ch == 'L' || ch == '[') {
-                part += ch;
-                flag = true;
+            if (refFlag && ch != ';') {
+                refPart += ch;
             } else if (ch == ';') {
-                part += ';';
-                result.add(part);
-                part = "";
-                flag = false;
+                refPart += ch;
+                refFlag = false;
+                if (arrayFlag) {
+                    arrayFlag = false;
+                    arrayPart += refPart;
+                    result.add(arrayPart);
+                    arrayPart = "";
+                } else {
+                    result.add(refPart);
+                }
+                refPart = "";
+            } else if (ch == 'B' || ch == 'C' || ch == 'D' || ch == 'F' || ch == 'I' || ch == 'J' || ch == 'S' || ch == 'Z') {
+                if (arrayFlag) {
+                    arrayFlag = false;
+                    arrayPart += ch;
+                    result.add(arrayPart);
+                    arrayPart = "";
+                } else {
+                    result.add(String.valueOf(ch));
+                }
+            } else if (ch == 'L' ){
+                refPart += ch;
+                refFlag = true;
+            } else if (ch == '[') {
+                arrayPart += ch;
+                arrayFlag = true;
+            } else if (ch == ';') {
+                refPart += ';';
             } else if (ch == '(') {
                 continue;
             } else if (ch == ')') {

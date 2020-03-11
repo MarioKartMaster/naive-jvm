@@ -51,6 +51,20 @@ public class Instruction {
             currentFrame.getOperandStack().push(3);
         });
 
+        // lconst_0
+        instructionNameTable.put((byte) 0x9, "lconst_0");
+        instructionTable.put((byte) 0x09, (t) -> {
+            Frame currentFrame = t.getCurrentFrame();
+            currentFrame.getOperandStack().push(0L);
+        });
+
+        // lconst_1
+        instructionNameTable.put((byte) 0xa, "lconst_1");
+        instructionTable.put((byte) 0x0a, (t) -> {
+            Frame currentFrame = t.getCurrentFrame();
+            currentFrame.getOperandStack().push(1L);
+        });
+
         // bipush
         instructionNameTable.put((byte) 0x10, "bipush");
         instructionTable.put((byte) 0x10, (t) -> {
@@ -449,6 +463,14 @@ public class Instruction {
             t.getCurrentFrame().getOperandStack().push(result);
         });
 
+        // ishl
+        instructionNameTable.put((byte) 0x78, "ishl");
+        instructionTable.put((byte) 0x78, t -> {
+            int bits = (int) t.getCurrentFrame().getOperandStack().pop();
+            int val = (int) t.getCurrentFrame().getOperandStack().pop();
+            t.getCurrentFrame().getOperandStack().push(val << (bits & 0x1F));
+        });
+
         // lshl
         instructionNameTable.put((byte) 0x79, "lshl");
         instructionTable.put((byte) 0x79, t -> {
@@ -831,13 +853,12 @@ public class Instruction {
             MethodRefConstant methodRefConstant = t.getMethodRefConstant(index);
             t.getCurrentKlass().resolveRefConstant(methodRefConstant);
             Method method = methodRefConstant.getMethod();
-            Klass klass = methodRefConstant.getKlass();
 
             List<String> parameters = method.getParameters();
             Object[] args = t.getCurrentFrame().getOperandStack().popByParametersWithThis(parameters);
 
             String runtimeKlassType = ((Obj) args[0]).getType();
-            klass = t.getClassLoader().loadClass(runtimeKlassType);
+            Klass klass = t.getClassLoader().loadClass(runtimeKlassType);
             Klass.KlassMethodSearchResult klassMethodSearchResult = klass.searchMethod(method.getName(), method.getDescriptor());
 
             System.out.format("invoke virtual %s %s %s\n",
@@ -933,6 +954,44 @@ public class Instruction {
             t.getCurrentFrame().getOperandStack().push(obj);
         });
 
+        // newarray
+        instructionNameTable.put((byte) 0xbc, "newarray");
+        instructionTable.put((byte) 0xbc, (t) -> {
+            byte atype = t.readCode();
+            String type = null;
+            int count = ((int) t.getCurrentFrame().getOperandStack().pop());
+            switch (atype) {
+                case 4:
+                    type = "boolean";
+                    break;
+                case 5:
+                    type = "char";
+                    break;
+                case 6:
+                    type = "float";
+                    break;
+                case 7:
+                    type = "double";
+                    break;
+                case 8:
+                    type = "byte";
+                    break;
+                case 9:
+                    type = "short";
+                    break;
+                case 10:
+                    type = "int";
+                    break;
+                case 11:
+                    type = "long";
+                    break;
+            }
+
+            ArrayObj ref = new ArrayObj(type, count);
+            t.getCurrentFrame().getOperandStack().push(ref);
+        });
+
+
         // anewarray
         instructionNameTable.put((byte) 0xbd, "anewarray");
         instructionTable.put((byte) 0xbd, (t) -> {
@@ -1023,10 +1082,26 @@ public class Instruction {
                 NativeMethod.vmInitialize(t, klass, method, args);
             } else if (klass.getThisClassName().equals("java/lang/Object") && method.getName().equals("hashCode")) {
                 NativeMethod.objectHashCode(t, klass, method, args);
+            } else if (klass.getThisClassName().equals("sun/misc/Unsafe") && method.getName().equals("arrayBaseOffset")) {
+                NativeMethod.unsafeArrayBaseOffset(t, klass, method, args);
+            } else if (klass.getThisClassName().equals("sun/misc/Unsafe") && method.getName().equals("arrayIndexScale")) {
+                NativeMethod.unsafeArrayIndexScale(t, klass, method, args);
+            } else if (klass.getThisClassName().equals("sun/misc/Unsafe") && method.getName().equals("addressSize")) {
+                NativeMethod.unsafeAddressSize(t, klass, method, args);
             } else if (klass.getThisClassName().equals("java/io/FileDescriptor") && method.getName().equals("initIDs")) {
                 NativeMethod.fileDescriptorInitIDs(t, klass, method, args);
+            } else if (klass.getThisClassName().equals("sun/reflect/Reflection") && method.getName().equals("getCallerClass")) {
+                NativeMethod.reflectGetCallerClass(t, klass, method, args);
+            } else if (klass.getThisClassName().equals("java/security/AccessController") && method.getName().equals("doPrivileged")) {
+                NativeMethod.doPrivileged(t, klass, method, args);
+            } else if (klass.getThisClassName().equals("java/lang/Class") && method.getName().equals("getDeclaredFields0")) {
+                NativeMethod.reflectGetDeclaredFields0(t, klass, method, args);
+            } else if (klass.getThisClassName().equals("java/lang/String") && method.getName().equals("intern")) {
+                NativeMethod.stringIntern(t, klass, method, args);
+            } else if (klass.getThisClassName().equals("java/lang/System") && method.getName().equals("arraycopy")) {
+                NativeMethod.systemArrayCopy(t, klass, method, args);
             } else {
-                throw new IllegalStateException("native method not found " + klass.getThisClassName() + " " + method.getName());
+                throw new IllegalStateException("native method not found " + klass.getThisClassName() + " " + method.getName() + " " + method.getDescriptor());
             }
             return;
         }

@@ -52,7 +52,7 @@ public class NaiveJVM {
     public static void main(String[] args) {
         // TODO: support class path
         String[] classpath = new String[]{
-                "/Users/binyang/Documents/naive-jvm/src/test/"
+                "/Users/yangbin/Documents/naive-jvm/src/test/"
         };
 
         CPU cpu = new CPU();

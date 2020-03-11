@@ -48,6 +48,7 @@ public class Klass {
     private boolean isResolved;
 
     private Map<String, Object> staticFields = new HashMap<>();
+
     private boolean isInitialized;
 
     public Klass(int magic, int minorVersion, int majorVersion, ConstantPool constantPool, int accessFlags, int thisClass, int superClass, int[] interfaces, Field[] fields, Method[] methods, Attribute[] attributes, ClassLoader classLoader) {
@@ -66,9 +67,11 @@ public class Klass {
 
         prepare();
 
-        KlassConstant thisKlassConstant = constantPool.getClassConstant(thisClass);
-        resolveClassConstant(thisKlassConstant);
-        thisClassName = thisKlassConstant.getName();
+        if (thisClass != 0) {
+            KlassConstant thisKlassConstant = constantPool.getClassConstant(thisClass);
+            resolveClassConstant(thisKlassConstant);
+            thisClassName = thisKlassConstant.getName();
+        }
 
         if (superClass != 0) {
             KlassConstant superKlassConstant = constantPool.getClassConstant(superClass);
